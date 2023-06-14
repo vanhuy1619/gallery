@@ -13,7 +13,7 @@ import (
 
 type ToDoItem payload.ToDoItem
 
-func (ToDoItem) TableName() string { return "todoitem" }
+func (ToDoItem) TableName() string { return "todo_items" }
 
 func init() {
 	log.Println("Main initialization, load config file")

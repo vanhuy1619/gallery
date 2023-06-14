@@ -4,6 +4,7 @@ import "time"
 
 type ToDoItem struct {
 	Id        int        `json:"id" gorm:"column:id;"`
+	Username  string     `json:"username"`
 	Title     string     `json:"title" gorm:"column:title;"`
 	Status    string     `json:"status" gorm:"column:status;"`
 	CreatedAt *time.Time `json:"created_at" gorm:"column:created_at;"`

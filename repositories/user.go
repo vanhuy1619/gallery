@@ -16,7 +16,7 @@ import (
 
 type User payload.User
 
-func (User) TableName() string { return "user" }
+func (User) TableName() string { return "User" }
 
 func init() {
 	log.Println("Main initialization, load config file")

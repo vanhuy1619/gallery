@@ -6,6 +6,7 @@ import (
 	"awesomeProject2/middleware"
 	"awesomeProject2/repositories"
 	"awesomeProject2/workflow"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/worker"
@@ -36,13 +37,26 @@ func RunTemporalWorker() {
 
 func main() {
 
-	//create temporal
+	//start temporal workflow
 	//RunTemporalWorker()
 
-	var db = datasource.ConfigData()
+	db, err := datasource.ConfigData()
+	if err != nil {
+		log.Fatal("Lỗi khi kết nối đến cơ sở dữ liệu:", err)
+		return
+	}
+
+	// Kiểm tra kết nối
+	dbConfig, err := db.DB()
+	if err != nil {
+		log.Fatal("Lỗi khi kiểm tra kết nối:", err)
+	}
+
+	fmt.Println("Kết nối thành công đến cơ sở dữ liệu Yugabyte DB!", dbConfig.Ping())
+
 	router := gin.Default()
 
-	//router.Use()
+	router.Use()
 
 	v1 := router.Group("/api")
 	{
