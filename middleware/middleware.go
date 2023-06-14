@@ -6,7 +6,25 @@ import (
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"os"
+	"time"
 )
+
+func GenerateToken(username string) string {
+	// Create a new JWT token
+	token := jwt.New(jwt.SigningMethodHS256)
+
+	// Set the claims
+	claims := token.Claims.(jwt.MapClaims)
+	claims["username"] = username
+	claims["exp"] = time.Now().Add(60 * time.Minute).Unix()
+
+	tokenString, err := token.SignedString([]byte(os.Getenv("SECRET_KEY"))) // Replace with your secret key
+	if err != nil {
+		return ""
+	}
+
+	return tokenString
+}
 
 func AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -17,15 +35,6 @@ func AuthMiddleware() gin.HandlerFunc {
 			c.Abort()
 			return
 		}
-
-		//// Extract the token string from the header
-		//splitToken := strings.Split(authHeader, "Bearer ")
-		//if len(splitToken) != 2 {
-		//	c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid authorization token format"})
-		//	c.Abort()
-		//	return
-		//}
-		//tokenString := splitToken[1]
 
 		// Validate and parse the token
 		token, err := jwt.Parse(authHeader, func(token *jwt.Token) (interface{}, error) {

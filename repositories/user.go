@@ -2,16 +2,14 @@ package repositories
 
 import (
 	"awesomeProject2/config"
+	"awesomeProject2/middleware"
 	"awesomeProject2/payload"
 	"errors"
-	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 	"log"
 	"net/http"
-	"os"
-	"time"
 )
 
 type User payload.User
@@ -21,23 +19,6 @@ func (User) TableName() string { return "User" }
 func init() {
 	log.Println("Main initialization, load config file")
 	config.LoadConfig()
-}
-
-func generateToken(username string) string {
-	// Create a new JWT token
-	token := jwt.New(jwt.SigningMethodHS256)
-
-	// Set the claims
-	claims := token.Claims.(jwt.MapClaims)
-	claims["username"] = username
-	claims["exp"] = time.Now().Add(60 * time.Minute).Unix()
-
-	tokenString, err := token.SignedString([]byte(os.Getenv("SECRET_KEY"))) // Replace with your secret key
-	if err != nil {
-		return ""
-	}
-
-	return tokenString
 }
 
 func Login(db *gorm.DB) gin.HandlerFunc {
@@ -64,7 +45,7 @@ func Login(db *gorm.DB) gin.HandlerFunc {
 			return
 		}
 
-		token := generateToken(existingUser.Username)
+		token := middleware.GenerateToken(existingUser.Username)
 
 		context.JSON(http.StatusOK, gin.H{"token": token})
 	}

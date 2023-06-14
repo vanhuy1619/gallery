@@ -2,6 +2,7 @@ package main
 
 import (
 	"awesomeProject2/activity"
+	"awesomeProject2/config"
 	"awesomeProject2/datasource"
 	"awesomeProject2/middleware"
 	"awesomeProject2/repositories"
@@ -11,8 +12,13 @@ import (
 	"go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/worker"
 	"log"
+	"os"
 )
 
+func init() {
+	log.Println("Main initialization, load config file")
+	config.LoadConfig()
+}
 func RunTemporalWorker() {
 	temporal, err := client.NewClient(client.Options{})
 	if err != nil {
@@ -73,5 +79,5 @@ func main() {
 
 	}
 
-	router.Run(":1400")
+	router.Run(":" + os.Getenv("CLIENT_POST"))
 }
