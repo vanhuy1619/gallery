@@ -1,13 +1,44 @@
 package main
 
 import (
+	"awesomeProject2/activity"
 	"awesomeProject2/datasource"
 	"awesomeProject2/middleware"
 	"awesomeProject2/repositories"
+	"awesomeProject2/workflow"
 	"github.com/gin-gonic/gin"
+	"go.temporal.io/sdk/client"
+	"go.temporal.io/sdk/worker"
+	"log"
 )
 
+func RunTemporalWorker() {
+	temporal, err := client.NewClient(client.Options{})
+	if err != nil {
+		log.Fatal("Unable create temporal: error", err)
+	}
+
+	//create worker
+	w := worker.New(temporal, workflow.GalerryQueueName, worker.Options{})
+	w.RegisterActivity(activity.Login)
+	w.RegisterActivity(activity.PostImage)
+	w.RegisterActivity(activity.SharePost)
+
+	//regist workflow
+	w.RegisterWorkflow(workflow.GalleryWorkFlow)
+
+	//start worker
+	err = w.Run(worker.InterruptCh())
+	if err != nil {
+		log.Fatal("Unable to start Temporal worker:", err)
+	}
+}
+
 func main() {
+
+	//create temporal
+	//RunTemporalWorker()
+
 	var db = datasource.ConfigData()
 	router := gin.Default()
 
