@@ -24,7 +24,9 @@ func main() {
 		v1.POST("/signup", repositories.Regist(db))
 		v1.POST("/login", repositories.Login(db))
 
+		v1.POST("/user/upload/images", middleware.AuthMiddleware(), repositories.UploadImages(db))
+
 	}
 
-	router.Run()
+	router.Run(":1400")
 }

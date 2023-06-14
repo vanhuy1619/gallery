@@ -78,6 +78,26 @@ func Regist(db *gorm.DB) gin.HandlerFunc {
 			return
 		}
 
+		if user.Username == "" || user.Password == "" {
+			context.JSON(http.StatusBadRequest, gin.H{"error": "Missing required fields"})
+			return
+		}
+
+		if err := db.Where("username = ?", user.Username).First(&user).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				// Username doesn't exist in the database
+				// Proceed with registration logic
+			} else {
+				// Error occurred while querying the database
+				context.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to query the database"})
+				return
+			}
+		} else {
+			// Username already exists in the database
+			context.JSON(http.StatusUnauthorized, gin.H{"error": "Username already exists"})
+			return
+		}
+
 		hashed, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 		if err != nil {
 			context.JSON(http.StatusBadRequest, gin.H{"error": "Failed to hash password"})
