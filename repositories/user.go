@@ -3,8 +3,10 @@ package repositories
 import (
 	"awesomeProject2/config"
 	"awesomeProject2/middleware"
-	"awesomeProject2/payload"
+	"awesomeProject2/model"
+	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
@@ -12,9 +14,9 @@ import (
 	"net/http"
 )
 
-type User payload.User
+type User model.User
 
-func (User) TableName() string { return "User" }
+func (User) TableName() string { return "users" }
 
 func init() {
 	log.Println("Main initialization, load config file")
@@ -46,7 +48,7 @@ func Login(db *gorm.DB) gin.HandlerFunc {
 		}
 
 		token := middleware.GenerateToken(existingUser.Username)
-
+		middleware.ValidSession(context.Writer, user.Username)
 		context.JSON(http.StatusOK, gin.H{"token": token})
 	}
 }
@@ -59,14 +61,25 @@ func Regist(db *gorm.DB) gin.HandlerFunc {
 			return
 		}
 
-		if user.Username == "" || user.Password == "" {
+		if user.Username == "" || user.Password == "" || user.Email == "" {
 			context.JSON(http.StatusBadRequest, gin.H{"error": "Missing required fields"})
 			return
 		}
 
-		if err := db.Where("username = ?", user.Username).First(&user).Error; err != nil {
+		// Format the JSON string
+		jsonData, err := json.MarshalIndent(user, "", "\t")
+		if err != nil {
+			context.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to format JSON"})
+			return
+		}
+
+		// Print the formatted JSON
+		fmt.Println(string(jsonData))
+
+		var existingUser User
+		if err := db.Where("username = ? OR email = ?", user.Username, user.Email).First(&existingUser).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
-				// Username doesn't exist in the database
+				// Username and email combination doesn't exist in the database
 				// Proceed with registration logic
 			} else {
 				// Error occurred while querying the database
@@ -74,8 +87,8 @@ func Regist(db *gorm.DB) gin.HandlerFunc {
 				return
 			}
 		} else {
-			// Username already exists in the database
-			context.JSON(http.StatusUnauthorized, gin.H{"error": "Username already exists"})
+			// Username or email already exists in the database
+			context.JSON(http.StatusUnauthorized, gin.H{"error": "Username or email already exists"})
 			return
 		}
 
@@ -85,13 +98,21 @@ func Regist(db *gorm.DB) gin.HandlerFunc {
 			return
 		}
 
+		_, errE := config.IsEmailValid(user.Email)
+		if errE != nil {
+			context.JSON(http.StatusBadRequest, model.ResponeError{Code: 1, Message: "Invalid Email"})
+			return
+		}
+
 		userValid := User{
 			Username: user.Username,
 			Password: string(hashed),
+			Gender:   user.Gender,
+			Email:    user.Email,
 		}
 
 		if err := db.Create(&userValid).Error; err != nil {
-			context.JSON(http.StatusInternalServerError, gin.H{"error": "Create new user failed"})
+			context.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create new user"})
 			return
 		}
 

@@ -1,4 +1,4 @@
-package payload
+package model
 
 type PostItem struct {
 	Id        int            `json:"id"`

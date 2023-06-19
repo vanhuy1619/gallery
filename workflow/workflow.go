@@ -2,7 +2,7 @@ package workflow
 
 import (
 	"awesomeProject2/activity"
-	"awesomeProject2/payload"
+	"awesomeProject2/model"
 	"go.temporal.io/sdk/temporal"
 	"go.temporal.io/sdk/workflow"
 	"time"
@@ -10,7 +10,7 @@ import (
 
 const GalerryQueueName = "GALLERY_TASK_QUEUE"
 
-func GalleryWorkFlow(ctx workflow.Context, user payload.User, post payload.PostItem) error {
+func GalleryWorkFlow(ctx workflow.Context, user model.User, post model.PostItem) error {
 	retryPolicy := &temporal.RetryPolicy{
 		InitialInterval:    time.Second,
 		BackoffCoefficient: 2.0,

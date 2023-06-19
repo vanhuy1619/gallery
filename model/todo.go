@@ -1,12 +1,13 @@
-package payload
+package model
 
 import "time"
 
 type ToDoItem struct {
-	Id        int        `json:"id" gorm:"column:id;"`
+	IdTodo    int        `json:"id_todo"`
 	Username  string     `json:"username"`
 	Title     string     `json:"title" gorm:"column:title;"`
-	Status    string     `json:"status" gorm:"column:status;"`
+	Content   string     `json:"content" gorm:"content"`
 	CreatedAt *time.Time `json:"created_at" gorm:"column:created_at;"`
 	UpdatedAt *time.Time `json:"updated_at" gorm:"column:updated_at;"`
+	Done      bool       `json:"done"`
 }

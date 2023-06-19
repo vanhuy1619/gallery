@@ -2,8 +2,9 @@ package repositories
 
 import (
 	"awesomeProject2/config"
-	"awesomeProject2/payload"
+	"awesomeProject2/model"
 	"github.com/gin-gonic/gin"
+	//"github.com/golang/mock/mockgen/model"
 	"gorm.io/gorm"
 	"log"
 	"net/http"
@@ -11,7 +12,7 @@ import (
 	"strings"
 )
 
-type ToDoItem payload.ToDoItem
+type ToDoItem model.ToDoItem
 
 func (ToDoItem) TableName() string { return "todo_items" }
 
@@ -31,12 +32,60 @@ func ReadItemById(db *gorm.DB) gin.HandlerFunc {
 			return
 		}
 
-		if err := db.Where("id = ?", id).First(&dataItem).Error; err != nil {
+		if err := db.Where("id_todo = ?", id).First(&dataItem).Error; err != nil {
 			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 			return
 		}
 
 		c.JSON(http.StatusOK, gin.H{"data": dataItem})
+	}
+}
+
+func ReadTodoBytitle(db *gorm.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var items []ToDoItem
+		username := c.GetString("username")
+		title := c.Query("title")
+		pageStr := c.DefaultQuery("page", "1")   // Default to page 1 if not provided
+		limitStr := c.DefaultQuery("limit", "1") // Default limit to 10 items if not provided
+
+		page, err := strconv.Atoi(pageStr)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid page number"})
+			return
+		}
+
+		limit, err := strconv.Atoi(limitStr)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid limit value"})
+			return
+		}
+
+		offset := (page - 1) * limit
+
+		query := db.Where("LOWER(title) LIKE ? AND username = ?", "%"+strings.ToLower(title)+"%", username)
+
+		// Get the total count of matching items
+		var totalCount int64
+		query.Model(&ToDoItem{}).Count(&totalCount)
+
+		// Perform pagination
+		if err := query.Offset(offset).Limit(limit).Find(&items).Error; err != nil {
+			if err == gorm.ErrRecordNotFound {
+				c.JSON(http.StatusNotFound, gin.H{"error": "Items not found"})
+			} else {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			}
+			return
+		}
+
+		// Example: Return a response with the items and pagination information
+		c.JSON(http.StatusOK, gin.H{
+			"data":       items,
+			"totalCount": totalCount,
+			"page":       page,
+			"limit":      limit,
+		})
 	}
 }
 
@@ -142,13 +191,13 @@ func CreateItem(db *gorm.DB) gin.HandlerFunc {
 		}
 
 		// do not allow "finished" status when creating a new task
-		dataItem.Status = "Doing" // set to default
-
+		dataItem.Done = false
+		dataItem.Username = c.GetString("username")
 		if err := db.Create(&dataItem).Error; err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
 
-		c.JSON(http.StatusOK, gin.H{"data": dataItem.Id})
+		c.JSON(http.StatusOK, gin.H{"data": dataItem.IdTodo})
 	}
 }

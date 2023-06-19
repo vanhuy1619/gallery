@@ -71,7 +71,7 @@ func main() {
 		v1.GET("/items/:id", repositories.ReadItemById(db))                            // get an item by ID
 		v1.PUT("/items/:id", repositories.EditItemById(db))                            // edit an item by ID
 		v1.DELETE("/items/:id", repositories.DeleteItemById(db))                       // delete an item by ID
-
+		v1.GET("/item", middleware.AuthMiddleware(), repositories.ReadTodoBytitle(db))
 		v1.POST("/signup", repositories.Regist(db))
 		v1.POST("/login", repositories.Login(db))
 

@@ -6,7 +6,7 @@ import (
 )
 
 func ConfigData() (*gorm.DB, error) {
-	dsn := "host=localhost port=5433 user=yugabyte dbname=test sslmode=disable"
+	dsn := "host=localhost port=5433 user=yugabyte dbname=huy sslmode=disable"
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
 		return nil, err
