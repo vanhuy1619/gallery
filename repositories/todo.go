@@ -79,7 +79,6 @@ func ReadTodoBytitle(db *gorm.DB) gin.HandlerFunc {
 			return
 		}
 
-		// Example: Return a response with the items and pagination information
 		c.JSON(http.StatusOK, gin.H{
 			"data":       items,
 			"totalCount": totalCount,
@@ -132,21 +131,26 @@ func GetListOfItems(db *gorm.DB) gin.HandlerFunc {
 func EditItemById(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id, err := strconv.Atoi(c.Param("id"))
-
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID"})
 			return
 		}
 
 		var dataItem ToDoItem
-
 		if err := c.ShouldBind(&dataItem); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
 
-		if err := db.Where("id = ?", id).Updates(&dataItem).Error; err != nil {
-			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		username := c.GetString("username")
+		result := db.Model(&ToDoItem{}).Where("id_todo = ? AND username = ?", id, username).Updates(dataItem)
+		if result.Error != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": result.Error.Error()})
+			return
+		}
+
+		if result.RowsAffected == 0 {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Item not found"})
 			return
 		}
 
@@ -177,12 +181,11 @@ func CreateItem(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var dataItem ToDoItem
 
-		if err := c.ShouldBind(&dataItem); err != nil {
+		if err := c.ShouldBindJSON(&dataItem); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
 
-		// preprocess title - trim all spaces
 		dataItem.Title = strings.TrimSpace(dataItem.Title)
 
 		if dataItem.Title == "" {
@@ -190,11 +193,11 @@ func CreateItem(db *gorm.DB) gin.HandlerFunc {
 			return
 		}
 
-		// do not allow "finished" status when creating a new task
 		dataItem.Done = false
 		dataItem.Username = c.GetString("username")
+
 		if err := db.Create(&dataItem).Error; err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
 
